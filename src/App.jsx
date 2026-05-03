@@ -183,37 +183,48 @@ function App() {
   }, [screen])
 
   const triggerJumpscare = () => {
-    setJumpscareActive(true)
+    const showScare = () => {
+      setJumpscareActive(true)
+      
+      // After 2 seconds, show end screen
+      setTimeout(() => {
+        setJumpscareActive(false)
+        setShowEnd(true)
+
+        // Stop the scream exactly when the image hides
+        try {
+          if (audioRef.current) {
+            audioRef.current.pause()
+            audioRef.current.currentTime = 0
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }, 2000)
+    }
 
     try {
       if (audioRef.current) {
         audioRef.current.muted = false
         audioRef.current.volume = 1
         audioRef.current.currentTime = 0
-        // Play the audio. 
-        // NOTE: Make sure you have downloaded your own scary sound effect and 
-        // placed it in the `public` folder named `scream.mp3`.
-        audioRef.current.play().catch(() => { })
+        const playPromise = audioRef.current.play()
+        
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            showScare()
+          }).catch(() => {
+            showScare()
+          })
+        } else {
+          showScare()
+        }
+      } else {
+        showScare()
       }
     } catch (e) {
-      // Audio might be blocked by browser policy
+      showScare()
     }
-
-    // After 2 seconds, show end screen
-    setTimeout(() => {
-      setJumpscareActive(false)
-      setShowEnd(true)
-
-      // Stop the scream exactly when the image hides
-      try {
-        if (audioRef.current) {
-          audioRef.current.pause()
-          audioRef.current.currentTime = 0
-        }
-      } catch (e) {
-        // Ignore
-      }
-    }, 2000)
   }
 
   const handleReplay = () => {
@@ -234,6 +245,8 @@ function App() {
       <CursorGlow />
       {/* Hidden audio element for jumpscare */}
       <audio ref={audioRef} preload="auto" src="/scream.mp3" />
+      {/* Hidden image to force preload and prevent black screen delay */}
+      <img src="/jumpscare.png" alt="" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />
       <div
         style={{
           display: 'flex',
