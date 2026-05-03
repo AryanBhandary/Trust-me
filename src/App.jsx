@@ -88,12 +88,39 @@ function App() {
   const [showEnd, setShowEnd] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const audioRef = useRef(null)
+  const audioUnlocked = useRef(false)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768)
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
+  }, [])
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (audioRef.current && !audioUnlocked.current) {
+        audioUnlocked.current = true
+        audioRef.current.muted = true
+        audioRef.current.play().then(() => {
+          audioRef.current.pause()
+          audioRef.current.currentTime = 0
+          audioRef.current.muted = false
+        }).catch(() => {
+          audioRef.current.muted = false
+        })
+      }
+      document.removeEventListener('click', unlockAudio)
+      document.removeEventListener('touchstart', unlockAudio)
+    }
+
+    document.addEventListener('click', unlockAudio)
+    document.addEventListener('touchstart', unlockAudio)
+
+    return () => {
+      document.removeEventListener('click', unlockAudio)
+      document.removeEventListener('touchstart', unlockAudio)
+    }
   }, [])
 
   // ── Screen 1: "Do you trust me?" ──
@@ -160,6 +187,7 @@ function App() {
 
     try {
       if (audioRef.current) {
+        audioRef.current.muted = false
         audioRef.current.volume = 1
         audioRef.current.currentTime = 0
         // Play the audio. 
