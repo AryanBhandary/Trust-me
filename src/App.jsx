@@ -162,10 +162,9 @@ function App() {
 
     const steps = [
       { pct: 0, text: 'Yayyy I knew I could trust you 🖤', delay: 0 },
-      { pct: 10, text: 'Preparing your surprise…', delay: 1500 },
-      { pct: 43, text: 'Preparing your surprise…', delay: 2500 },
-      { pct: 79, text: 'Almost there…', delay: 3500 },
-      { pct: 99, text: 'Almost there…', delay: 4500 },
+      { pct: 18, text: 'Preparing your surprise…', delay: 1200 },
+      { pct: 47, text: 'Almost there…', delay: 2500 },
+      { pct: 84, text: 'Accessing front camera...', delay: 3800 },
     ]
 
     const timers = steps.map(({ pct, text, delay }) =>
@@ -175,10 +174,10 @@ function App() {
       }, delay)
     )
 
-    // Dramatic pause at 99%, then jumpscare
+    // Subvert expectations: jumpscare abruptly triggers right after the alarming text
     const jumpTimer = setTimeout(() => {
       triggerJumpscare()
-    }, 6500)
+    }, 4800)
 
     return () => {
       timers.forEach(clearTimeout)
@@ -456,6 +455,8 @@ function App() {
                   fontWeight: 300,
                   letterSpacing: '1px',
                   marginBottom: '2rem',
+                  color: loadingText.includes('camera') ? '#ff0055' : undefined,
+                  textShadow: loadingText.includes('camera') ? '0 0 20px #ff0055' : undefined,
                 }}
                 animate={{ opacity: [0.6, 1, 0.6] }}
                 transition={{ repeat: Infinity, duration: 2 }}
@@ -476,8 +477,8 @@ function App() {
                     style={{
                       width: '32px',
                       height: '32px',
-                      border: '2px solid rgba(255,255,255,0.1)',
-                      borderTop: '2px solid white',
+                      border: loadingText.includes('camera') ? '2px solid rgba(255,0,85,0.2)' : '2px solid rgba(255,255,255,0.1)',
+                      borderTop: loadingText.includes('camera') ? '2px solid #ff0055' : '2px solid white',
                       borderRadius: '50%',
                       margin: '0 auto 20px',
                     }}
@@ -500,8 +501,8 @@ function App() {
                       transition={{ duration: 0.8, ease: 'easeOut' }}
                       style={{
                         height: '100%',
-                        background: 'white',
-                        boxShadow: '0 0 10px white',
+                        background: loadingText.includes('camera') ? '#ff0055' : 'white',
+                        boxShadow: loadingText.includes('camera') ? '0 0 10px #ff0055' : '0 0 10px white',
                         borderRadius: '2px',
                       }}
                     />
@@ -510,8 +511,9 @@ function App() {
                   <p
                     style={{
                       fontSize: '0.9rem',
-                      color: 'rgba(255,255,255,0.4)',
+                      color: loadingText.includes('camera') ? '#ff0055' : 'rgba(255,255,255,0.4)',
                       fontVariantNumeric: 'tabular-nums',
+                      textShadow: loadingText.includes('camera') ? '0 0 10px rgba(255,0,85,0.5)' : undefined,
                     }}
                   >
                     {loadingPct}%
