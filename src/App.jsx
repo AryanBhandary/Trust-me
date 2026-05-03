@@ -87,8 +87,9 @@ function App() {
   const [jumpscareActive, setJumpscareActive] = useState(false)
   const [showEnd, setShowEnd] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const audioRef = useRef(null)
-  const audioUnlocked = useRef(false)
+  const audioCtxRef = useRef(null)
+  const audioBufferRef = useRef(null)
+  const activeSourceRef = useRef(null)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768)
@@ -98,17 +99,20 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext
+    audioCtxRef.current = new AudioContext()
+
+    fetch('/scream.mp3')
+      .then((res) => res.arrayBuffer())
+      .then((data) => audioCtxRef.current.decodeAudioData(data))
+      .then((buffer) => {
+        audioBufferRef.current = buffer
+      })
+      .catch(() => {})
+
     const unlockAudio = () => {
-      if (audioRef.current && !audioUnlocked.current) {
-        audioUnlocked.current = true
-        audioRef.current.muted = true
-        audioRef.current.play().then(() => {
-          audioRef.current.pause()
-          audioRef.current.currentTime = 0
-          audioRef.current.muted = false
-        }).catch(() => {
-          audioRef.current.muted = false
-        })
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume()
       }
       document.removeEventListener('click', unlockAudio)
       document.removeEventListener('touchstart', unlockAudio)
@@ -183,48 +187,33 @@ function App() {
   }, [screen])
 
   const triggerJumpscare = () => {
-    const showScare = () => {
-      setJumpscareActive(true)
-      
-      // After 2 seconds, show end screen
-      setTimeout(() => {
-        setJumpscareActive(false)
-        setShowEnd(true)
-
-        // Stop the scream exactly when the image hides
-        try {
-          if (audioRef.current) {
-            audioRef.current.pause()
-            audioRef.current.currentTime = 0
-          }
-        } catch (e) {
-          // Ignore
-        }
-      }, 2000)
-    }
+    setJumpscareActive(true)
 
     try {
-      if (audioRef.current) {
-        audioRef.current.muted = false
-        audioRef.current.volume = 1
-        audioRef.current.currentTime = 0
-        const playPromise = audioRef.current.play()
-        
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            showScare()
-          }).catch(() => {
-            showScare()
-          })
-        } else {
-          showScare()
+      if (audioCtxRef.current && audioBufferRef.current) {
+        if (audioCtxRef.current.state === 'suspended') {
+          audioCtxRef.current.resume()
         }
-      } else {
-        showScare()
+        const source = audioCtxRef.current.createBufferSource()
+        source.buffer = audioBufferRef.current
+        source.connect(audioCtxRef.current.destination)
+        source.start(0)
+        activeSourceRef.current = source
       }
-    } catch (e) {
-      showScare()
-    }
+    } catch (e) {}
+
+    // After 2 seconds, show end screen
+    setTimeout(() => {
+      setJumpscareActive(false)
+      setShowEnd(true)
+
+      // Stop the scream exactly when the image hides
+      try {
+        if (activeSourceRef.current) {
+          activeSourceRef.current.stop()
+        }
+      } catch (e) {}
+    }, 2000)
   }
 
   const handleReplay = () => {
@@ -243,8 +232,6 @@ function App() {
     <>
       <Particles />
       <CursorGlow />
-      {/* Hidden audio element for jumpscare */}
-      <audio ref={audioRef} preload="auto" src="/scream.mp3" />
       {/* Hidden image to force preload and prevent black screen delay */}
       <img src="/jumpscare.png" alt="" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />
       <div
